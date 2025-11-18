@@ -1,0 +1,175 @@
+install.packages("httr")
+library(httr)
+
+#Bilbasen
+
+library(httr)
+library(rvest)
+library(dplyr)
+
+# first page 
+#https://www.bilbasen.dk/brugt/bil/bmw?fuel=1&includeengroscvr=true&includeleasing=false&pagesize=30#
+
+startlink <- "https://www.bilbasen.dk/brugt/bil/volvo?fuel=1&includeengroscvr=true&includeleasing=false&pagesize=100"
+rawres <- GET(url=startlink, add_headers('User-Agent'='Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+                                         'Cookie'='aws-waf-token=adc54a3d-e096-4a7b-97ef-04330310115a:CgoAY6xJtD7fAAAA:FOay2EvAis/qGopWiY5ZfadufW078M3rTRinWjS/0hScztmRNHyLwFViZua41R9VYcvBRCmV3oLq8DBv5TBcK8r6592mkNBP+34hLRKUeTH0BQGc9XlBAFqQr4vTagVOpTlTDCMeRi9xsm4fu+pVzrur7K4667zezbIrMeghxo+XhoZUk9tNO8dYwdQoMYrzMsY=; GdprConsent-Custom=eyJ2ZW5kb3JJZHMiOnt9fQ==; _cmp_analytics=0; _cmp_personalisation=0; _cmp_marketing=0; _cmp_advertising=0; consentUUID=497518af-abd5-431c-b264-4dd9f9ce714b_50; consentDate=2025-11-14T10:35:58.054Z; GdprConsent={"version":"IAB TCF 2.0","consentString":"CQa4GoAQa4GoAAGABBENCCFgAAAAAAAAAAZQAAAAAAAA.YAAAAAAAAAAA"}; __RequestVerificationToken=qb6vgJADsKOu-wJY9MA0BT82BPDFfs3ClBJiVsqo_t1dD6RwHKjTe_kYA-uS1BYdWfqBl5JfytNxv74LcpQIe9xwI1E1; mvc.GlobalIdListe=%7b%221%22%3a6171825%2c%222%22%3a6335585%2c%223%22%3a6723265%2c%224%22%3a6459276%2c%225%22%3a6590279%2c%226%22%3a6488840%2c%227%22%3a6408451%2c%228%22%3a6581154%2c%229%22%3a6604246%2c%2210%22%3a6576511%2c%2211%22%3a6697341%2c%2212%22%3a6677834%2c%2213%22%3a6615124%2c%2214%22%3a6615125%2c%2215%22%3a6645403%2c%2216%22%3a6574110%2c%2217%22%3a6639724%2c%2218%22%3a6672713%2c%2219%22%3a6617603%2c%2220%22%3a6680205%2c%2221%22%3a6579348%2c%2222%22%3a6640803%2c%2223%22%3a6674276%2c%2224%22%3a6313850%2c%2225%22%3a6697846%2c%2226%22%3a6666717%2c%2227%22%3a6665745%2c%2228%22%3a6362229%2c%2229%22%3a6644507%2c%2230%22%3a6327891%2c%2231%22%3a6589650%2c%2232%22%3a6724860%7d; bbsession=id=66466a8e-b85a-4006-8ff6-c8bb5b380976; bbtracker=id=8e5fe7c8-c6c6-4537-affe-253034c06de1; cis-jwe=eyJpc3N1ZWRBdCI6IjIwMjUtMTEtMTdUMDg6NTI6NThaIiwiZW5jIjoiQTEyOENCQy1IUzI1NiIsInJlSXNzdWVkQXQiOiIyMDI1LTExLTE3VDA4OjUyOjU4WiIsImFsZyI6ImRpciIsImtpZCI6IjMifQ..-AHkiZt0eK89YPxpHaz32A.1g7KGdqIP8evOlWdzmYI8JbjFmf225T67jrNUcuHEOB3W-12_1S-wHymifYcEztirpsIyO0wksewS_svnaT81w.ikKCwTKl1npdZb-WhHKmHw; _pulse2data=06debe9f-6d79-4bd0-b4e7-035e9884d7a0%2Cv%2C%2C1763974466000%2CeyJpc3N1ZWRBdCI6IjIwMjUtMTEtMTdUMDg6NTQ6MjZaIiwiZW5jIjoiQTEyOENCQy1IUzI1NiIsInJlSXNzdWVkQXQiOiIyMDI1LTExLTE3VDA4OjU0OjI2WiIsImFsZyI6ImRpciIsImtpZCI6IjMifQ..y_J21Otol5UwvZft1hTnJg.7yF6hUjbrCA5nMAWE-m2RxnlqoeUc76mXdzuUMl7CtM310yB_3VghJMQGlPEoDyRLLbcpwWFLZiiawRCqeZo-meb67djZU87JqwXQ8XyH1iXJNYuyXbFAeFpgJWN-s-xlsI_H34piDOkH_WWOjlAs3OYfhhEDvZAGucBR7C6TG2iiO72u1LUVXuzG5kY_ECQt15elVybvJsPWAXCAX0ZpQ.FnqxZyBWu81VV9wKVqvBvA%2C%2C0%2Ctrue%2C%2C; _pulsesession=%5B%22sdrn%3Aschibsted%3Asession%3A216c00b2-9a28-4579-8f3d-97ad469dc8a7%22%2C1763367856133%2C1763369666701%5D'))
+rawres$status_code
+rawcontent <- httr::content(rawres,as="text")
+
+# tranform text to html-nodes
+page <- read_html(rawcontent)
+
+# extract car-elements from startpage
+carlist <- page %>% html_elements("article")
+
+# Én bil (start small)
+car=carlist[[1]]
+# tag-liste
+ptag=".Listing_price__6B3kE"
+proptag=".Listing_properties___ptWv"
+mmtag="[class^='Listing_makeModel']"
+dettag="[class^='Listing_details']"
+dettagitem="[class^='ListingDetails_listItem']"
+desctag="[class^='Listing_description']"
+loctag="[class^='Listing_location']"
+forhandlertag='a[data-e2e="sellers-other-ads-cta"]'
+forhandlerbilledetag="[class^='Listing_dealerLogoCard']"
+
+# dataframe til opsamling
+cn=c("price","details","makemodel","props","desc","location","forhandlertag", "link","carid","scrapedate", "forhandlerbillede")
+colldf=as.data.frame(matrix(data=NA,nrow=0,ncol = 11))
+colnames(colldf)=cn
+
+# Make sure colldf exists before the loop
+colldf <- data.frame()
+library(stringr)
+colldf$description <- gsub("-", "", colldf$description)
+colldf$description <- gsub("\n", ". ", colldf$description)
+colldf$description <- gsub(" +", " ", colldf$description)
+colldf$description <- gsub("[^\x01-\x7F]", "", colldf$description)
+colldf$description <- gsub("!!!", "", colldf$description)
+colldf$description <- gsub("\\.\\.", ".", colldf$description)
+
+library(rvest)
+
+selector_logo <- "img[class^='Listing_dealerLogoCard']"
+
+forhandlerbillede <- car %>%
+  html_elements(selector_logo) %>%
+  html_attr("src")
+
+forhandlerbillede
+car %>% 
+  html_elements("img") %>% 
+  length()
+car %>% 
+  html_elements("img") %>% 
+  head(10) %>% 
+  html_attr("class")
+
+logo_url <- car %>% 
+  html_elements("img[class^='Listing_dealerLogoCard']") %>% 
+  html_attr("src")
+
+
+link <- car %>% html_element("a") %>% html_attr("href")
+full_url <- paste0("https://www.bilbasen.dk", link)
+
+library(chromote)
+install.packages("chromote")
+
+
+
+
+b <- ChromoteSession$new()
+b$Page$navigate(full_url)
+b$wait_for_idle()
+
+html <- b$get_html()
+carpage <- read_html(html)
+
+forhandlerlogo <- carpage %>% 
+  html_element("img[class^='Listing_dealerLogoCard']") %>% 
+  html_attr("src")
+
+
+for (car in carlist) {
+  car=car
+  tryCatch({
+    price <- car %>% html_element(ptag) %>% html_text()
+    props <- car %>% html_element(proptag) %>% html_text()
+    makemodel <- car %>% html_element(mmtag) %>% html_text()
+    #details1 <- car %>% html_element(dettag) %>% html_text()
+    details <- car %>% html_elements(dettagitem) %>% html_text() %>% paste0(collapse = "_")
+    description <- car %>% html_elements(desctag) %>% html_text()
+    location <- car %>% html_elements(loctag) %>% html_text()
+    forhandler <- car %>% html_elements(forhandlertag) %>% html_text()
+    link <- car %>% html_element("a") %>% html_attr("href") 
+    carid <- link %>% str_extract("[0-9]{7}")
+    forhandlerbillede <- car %>% html_elements(forhandlerbilledetag) %>% html_attr("src")
+    tmpdf <- data.frame(
+      price       = price,
+      details     = details,
+      makemodel   = makemodel,
+      props       = props,
+      description = description,
+      location    = location,
+      link        = link,
+      carid       = carid,
+      timestamp   = Sys.time(),
+      stringsAsFactors = FALSE
+    )
+    colldf <- rbind(colldf, tmpdf)
+  },
+  error = function(cond) {
+    print(makemodel)
+  }
+  )
+}
+
+colldf2 <- colldf
+
+colldf2$scrapedate <- colldf2$timestamp + 24*60*60
+colldf2$timestamp <- NULL
+
+ny_bil_1 <- data.frame(
+  price = "199.900 kr.",
+  details = "1/2019_45.000 km_16,5 km/l_Automatisk_Benzin",
+  makemodel = "Volvo V40 T3 Momentum",
+  props = "1/2019 45000 km 16,5 km/l",
+  description = "Flot velholdt Volvo. Aut. gear og masser af udstyr.",
+  location = "Aalborg, Nordjylland",
+  link = "https://www.bilbasen.dk/brugt/bil/volvo/v40/1234567",
+  carid = "1234567",
+  scrapedate = Sys.time(),
+  stringsAsFactors = FALSE
+)
+
+ny_bil_2 <- data.frame(
+  price = "249.900 kr.",
+  details = "4/2020_30.000 km_17,8 km/l_Automatisk_Benzin",
+  makemodel = "Volvo XC40 T4 R-Design",
+  props = "4/2020 30000 km 17,8 km/l",
+  description = "R-Design udgave med masser af udstyr og lavt km-tal.",
+  location = "Odense, Fyn",
+  link = "https://www.bilbasen.dk/brugt/bil/volvo/xc40/7654321",
+  carid = "7654321",
+  scrapedate = Sys.time(),
+  stringsAsFactors = FALSE
+)
+
+colldf2 <- rbind(colldf2, ny_bil_1, ny_bil_2)
+
+colldf2$price[1] <- "199.900 kr."
+colldf2$price[2] <- "149.900 kr."
+colldf2$price[3] <- "89.900 kr."
+
+colldf2 <- colldf2[-c(5, 6, 7, 10, 12), ]
+
+
+
+
+
+
+
+  
