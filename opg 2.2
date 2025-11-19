@@ -1,0 +1,57 @@
+library(httr)
+library(dplyr)
+library(readr)
+library(stringr)
+install.packages("DBI")
+install.packages("RMariaDB")
+
+library(DBI)
+
+con <- dbConnect(
+  RMariaDB::MariaDB(),
+  user = "root",
+  password = "Mysql12!",
+  dbname = "biler",
+  host = "localhost",
+  port = 3306
+)
+
+dbIsValid(con)
+dbWriteTable(con, "carhej", colldf, overwrite = TRUE, row.names = FALSE)
+
+dbListTables(con)
+
+---
+ALTER TABLE carhej
+    MODIFY carid VARCHAR(50) NOT NULL;
+
+-- 2) Sæt carid som primary key
+ALTER TABLE carhej
+    ADD PRIMARY KEY (carid);
+
+SELECT *
+FROM carhej
+WHERE carid = '6715032';
+
+SELECT carid, COUNT(*) AS antal
+FROM carhej
+GROUP BY carid
+HAVING COUNT(*) > 1;
+
+SELECT *
+FROM carhej
+WHERE carid = '6715032';
+
+SELECT *
+FROM carhej
+WHERE carid = '6730184';
+
+DELETE FROM carhej
+WHERE carid = '6715032'
+LIMIT 1;
+
+DELETE FROM carhej
+WHERE carid = '6730184'
+LIMIT 1;
+
+
