@@ -1,0 +1,33 @@
+DROP DATABASE IF EXISTS biler;
+CREATE DATABASE biler;
+USE biler;
+DROP TABLE IF EXISTS variabler;
+DROP TABLE IF EXISTS car;
+DROP TABLE IF EXISTS variabler2;
+DROP TABLE IF EXISTS listing;
+DROP TABLE IF EXISTS bil;
+DROP TABLE IF EXISTS brand;
+DROP TABLE IF EXISTS dealer;
+DROP TABLE IF EXISTS location;
+DROP TABLE IF EXISTS model;
+
+
+
+CREATE TABLE car (
+    car_id INT PRIMARY KEY,         
+    makemodel VARCHAR(100),
+    description VARCHAR(100),
+    details VARCHAR(100),
+    location VARCHAR(100),
+    link VARCHAR(100)
+);
+
+CREATE TABLE variabler (
+   car_id INT PRIMARY KEY,
+   price INT,
+   scrapedate DATETIME,
+    CONSTRAINT fk_variabler_car
+        FOREIGN KEY (car_id) REFERENCES car(car_id)
+);
+
+
