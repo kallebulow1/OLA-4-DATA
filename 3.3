@@ -1,0 +1,46 @@
+get_track <- function(icao) {
+  url <- paste0(
+    "https://opensky-network.org/api/tracks/all?",
+    "icao24=", icao,
+    "&time=0"
+  )
+  
+  res <- GET(url, add_headers(Authorization = paste("Bearer", token)))
+  txt <- suppressWarnings(content(res, "text"))
+  
+  # Hvis API returnerer ingenting → stop
+  if (nchar(txt) < 20) return(NULL)
+  
+  x <- tryCatch(fromJSON(txt), error = function(e) NULL)
+  if (is.null(x) || is.null(x$path)) return(NULL)
+  
+  df <- as.data.frame(x$path)
+  colnames(df) <- c("time", "lat", "lng", "alt", "hdg", "onGround")
+  
+  if (nrow(df) < 5) return(NULL)
+  
+  return(df)
+}
+
+results <- data.frame(
+  icao24 = character(),
+  sd_course = numeric(),
+  r_squared = numeric()
+)
+
+for (id in icaos) {
+  
+  df <- get_track(id)
+  if (is.null(df)) next
+  
+  sd_course <- sd(df$hdg, na.rm = TRUE)
+  r2 <- summary(lm(lat ~ lng, data = df))$r.squared
+  
+  results <- rbind(results, data.frame(
+    icao24 = id,
+    sd_course = sd_course,
+    r_squared = r2
+  ))
+  
+  print(paste("OK:", id))
+}
