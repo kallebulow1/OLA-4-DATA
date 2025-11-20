@@ -1,0 +1,18 @@
+# opgave 1.2
+colldf_1 <- data.frame(salg = colldf$description)
+
+clean_txt <- function(x) {
+  x %>%
+    # newline → mellemrum
+    str_replace_all("[\r\n]+", " ") %>%
+    # erstat ALT undtagen bogstaver og mellemrum med mellemrum
+    str_replace_all("[^A-Za-zÆØÅæøå ]", " ") %>%
+    # mange mellemrum → ét mellemrum
+    str_replace_all("\\s+", " ") %>%
+    # trim
+    str_trim()
+}
+
+colldf$salg_clean <- sapply(colldf_1$salg, clean_txt)
+
+sammenlign_salgstekst <- data.frame(colldf$description, colldf$salg_clean)
