@@ -1,0 +1,21 @@
+
+
+library(httr)
+library(dplyr)
+library(readr)
+library(stringr)
+install.packages("DBI")
+install.packages("RMariaDB")
+
+library(DBI)
+
+con <- dbConnect(
+  RMariaDB::MariaDB(),
+  user = "root",
+  password = "Dinfar123",
+  dbname = "biler",
+  host = "localhost",
+  port = 3306
+)
+dbIsValid(con)
+
