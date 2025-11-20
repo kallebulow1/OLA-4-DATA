@@ -1,0 +1,60 @@
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(ggplot2)
+library(rvest)
+library(stringr)
+
+# opgave 1.1
+
+# first page
+startlink <- "https://www.bilbasen.dk/brugt/bil/vw/ms-up!-serie?fuel=3&includeengroscvr=true&includeleasing=false"
+rawres <- GET(url=startlink, add_headers(
+  'User-Agent'='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+  'Cookie'='aws-waf-token=b16c5ba3-f580-4ec9-97e9-671d37144ccf:CgoAe7Q2t9NuAAAA:wBI/Nem0WHgD70wFuMOc/PwXQX70UNKW3ckTL7eoVsdFcKl/OjczahEbeF5s5R9UIax0cMHWzEqk3L/fLzhTcbxyoSEReJvXtT08U7NejEOhhNh+6SYLrThgp7GfI0/pbf41RV/2wZoa9nkd7vba+qxdZT/D6t3QJ6BL9K032Ppd+Udoh2/CnP5fLBz2SZAIudI=; bbsession=id=2e9ffa10-f707-4f02-a051-01a3b6d1598d; _cmp_analytics=1; _cmp_personalisation=1; _cmp_marketing=1; _cmp_advertising=1; consentUUID=83b4eff9-14df-418f-92d8-57bc94a2c9b0_50; consentDate=2025-11-17T07:57:10.334Z; GdprConsent={"version":"IAB TCF 2.0","consentString":"CQbB_cAQbB_cAAGABCENCCFgAPLAAELAAAZQJtNR7C_1LWlBoTZ3SZMgUYxX4dhirkQxBAZJk0QFwLOCIBQWkiEwNAzANiICGBAAOFBBIQFkGICQBQCgKAgRrDDEaESUgCJCJ4AEgAMQQwJICFBJGgFCGQAYxvg4chBQmB6NwMrsAMxwi4BGmWY5BoCwWBAVAYcpDPv0ZBKSkxAE9bwUOgnwZF6BE0AAAAAAAAAAAAAAAAAAAAAAAQOWgEgAqAD4AMsAmgCsgFzAMhAb8A5YAgJAeAAWABUAC4AHAAPAAgABfADIANAAmAB-AEIAI4AVoAwIBlAGWAO4AfsBIgEmAKiAYoA9oCaQFHgLsAXmA1cBuYD4wH_AQtCACwAHgE0AJ2AdUA_oCxAFuAL_AZCA1MBwg6BCAAsACoAHAAQAAvgBkAGgATAAxAB-AFaAMAAZQA0QB-gEWgI6AkwBUQDFAHtAPsAmQBNICjwFugLsAXmAywBq4D4wH3AP7Af8BC0cAVAAeABcAKAAfABHADkAHcAQgAnYB1QD-gIQAWIAtkBbgC_wGQgNTAbmA4QByxKAcAAsADgATAAxACOAFaAMAAqIBigEIAKPAXYAvMB8ZIAOABcAdwB1QFuAL_AZYA5YpAeAAWABUADgAIIAZABoAEwAMQAfgBWgDAAGUANEAfoBFgCOgElAKiAYoA9oB9gE0gLsAXmAywB4oD4wH9gP-AhaBDkoANAAuAFAARwA5AB3AEiALqAdUBCACpAFuANTAbmA.YAAAAAAAAAAA"}; GdprConsent-Custom=eyJ2ZW5kb3JJZHMiOnsiNjIyNjE5YjNkMTIzZTkwNmE5MWJhMDY4Ijp0cnVlLCI1ZTcxNmZjMDlhMGI1MDQwZDU3NTA4MGYiOnRydWV9fQ==; _pulse2data=b5dd0f2e-eea8-4386-b13d-5b06483e2c1a%2Cv%2C%2C1763971033000%2CeyJpc3N1ZWRBdCI6IjIwMjUtMTEtMTdUMDc6NTY6MzRaIiwiZW5jIjoiQTEyOENCQy1IUzI1NiIsInJlSXNzdWVkQXQiOiIyMDI1LTExLTE3VDA3OjU3OjEzWiIsImFsZyI6ImRpciIsImtpZCI6IjMifQ..e5lvokSizaVVj1XlyYDAuQ.GaVJsDgpAfx0EOibGZDszwkB1RCQV_hzL_6ivdfXwgZXZjzeNAwloeyUD69x-BpNuJ5WU3cQeO3IjdTXKXKo5QsktOJ6goRRA_mkZxT0k6GSGXPVT7eWKMj91s726Eywoq5lB6SHOIf-miJcMye8bWvbFHT5sGrdHL_MNocgOK0AVzMJ2WZjW1RGvXndpbPfNl4bd42Cy06vYIcjo8hBvA.eVbW2g99CiEteOL_iHZXew%2C%2C0%2Ctrue%2C%2C; _gcl_au=1.1.1304506599.1763366236; _hjSessionUser_2664500=eyJpZCI6Ijg0OWQ4MDE3LWI4NWQtNTA4MC05ZGRkLWVhZTk2OTIwMTBmNyIsImNyZWF0ZWQiOjE3NjMzNjYyMzcwODcsImV4aXN0aW5nIjp0cnVlfQ==; bbtracker=id=8e5fe7c8-c6c6-4537-affe-253034c06de1; _hjSession_2664500=eyJpZCI6IjhlZmNiMDFkLTIzMDUtNDA2NC1hNjE2LWRhNzMyMGJjZDNiNSIsImMiOjE3NjM0NTM2NzY5MDMsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjowLCJzcCI6MH0=; __gads=ID=1af916af146aa50b:T=1763366230:RT=1763455381:S=ALNI_MZwH2vH3i8HKAOjf5pmP3g723PQdw; __gpi=UID=0000128dc3bf3f65:T=1763366230:RT=1763455381:S=ALNI_MZNxW3Hbuj4cebF-R8WsmxZLa1lyA; __eoi=ID=ff45e72f5416b061:T=1763366230:RT=1763455381:S=AA-AfjaKNFBQm8xsPdpF3znBgUb-; _pulsesession=%5B%22sdrn%3Aschibsted%3Asession%3A3c352c87-db6a-42ca-aeea-62a4d1015754%22%2C1763453567556%2C1763455399620%5D; __rtbh.lid=%7B%22eventType%22%3A%22lid%22%2C%22id%22%3A%221hHn18QG7ug0WQRZw0gG%22%2C%22expiryDate%22%3A%222026-11-18T08%3A43%3A20.392Z%22%7D; __rtbh.uid=%7B%22eventType%22%3A%22uid%22%2C%22id%22%3A%22undefined%22%2C%22expiryDate%22%3A%222026-11-18T08%3A43%3A20.396Z%22%7D; cto_bundle=rqrpHl91TU5ReDB1MTNGOTBDd0dWJTJCYiUyRmw3MHpXSCUyRjBYVGFlV0NQZFVGZDRkeG13U25HYTNyWkF6SHZsMXAwWjJnclVLVFp2NmhsSm1tUHFtJTJGN3hkQ2dHeTA3RUxMSm9RT2owODVNWEs5NiUyQkIxUmxnY05ZUW4lMkJ2TncyVG54b05ueUwxdDF6Y1k1Tm52ZHlaS0pFaVlzTSUyQkFSYXFQc2dic1BxQXFQSHo0c1MlMkZsbktwT0Exdm5IRldNVjhlckJ2a0QlMkZiMDI2MnJkMjJqZ3RLWHhYRHA2OTdpTVdBJTNEJTNE; cto_bundle=rqrpHl91TU5ReDB1MTNGOTBDd0dWJTJCYiUyRmw3MHpXSCUyRjBYVGFlV0NQZFVGZDRkeG13U25HYTNyWkF6SHZsMXAwWjJnclVLVFp2NmhsSm1tUHFtJTJGN3hkQ2dHeTA3RUxMSm9RT2owODVNWEs5NiUyQkIxUmxnY05ZUW4lMkJ2TncyVG54b05ueUwxdDF6Y1k1Tm52ZHlaS0pFaVlzTSUyQkFSYXFQc2dic1BxQXFQSHo0c1MlMkZsbktwT0Exdm5IRldNVjhlckJ2a0QlMkZiMDI2MnJkMjJqZ3RLWHhYRHA2OTdpTVdBJTNEJTNE; cto_bundle=1xRG-19oR2kwZnR0OUZNT1RLaWZTazBVNkhWbSUyRkxTNFRLVENuRkxhY0hFSFhGeVozOWllc1JPWmIlMkJqa2ZaNUdDNUxhSU1CVnclMkJhM05IdEhXRTE3b0lCd2ZyUGRTNlA3Z2xLNTBiM0htc1BNRmp0M0RhcUtXRXN2YW1tZG5wQlJEVDY3Y0swVEdCampiUGZZMnRKdnRNajR6NU1KUlRLQUlWN0JSRmlXM1dWOENwUWYlMkZHRU12cE9FVFNTVWxoT0xUMSUyRkVIeUNjeDRCM0M4NnVYMjFya1ZzZ2k2QSUzRCUzRA'
+))
+rawres$status_code
+rawcontent <- httr::content(rawres,as="text")
+
+# tranform text to html-nodes
+page <- read_html(rawcontent)
+
+# extract car-elements from startpage
+carlist <- page %>% html_elements("article")
+
+# tag-liste
+ptag=".Listing_price__6B3kE"
+proptag=".Listing_properties___ptWv"
+mmtag="[class^='Listing_makeModel']"
+dettag="[class^='Listing_details']"
+dettagitem="[class^='ListingDetails_listItem']"
+desctag="[class^='Listing_description']"
+loctag="[class^='Listing_location']"
+
+# dataframe til opsamling
+cn=c("price","details","makemodel","props","desc","location","link","carid","scrapedate,sellerid")
+colldf=as.data.frame(matrix(data=NA,nrow=0,ncol = 10))
+colnames(colldf)=cn
+
+for (car in carlist) {
+  tryCatch({
+    price <- car %>% html_element(ptag) %>% html_text()
+    props <- car %>% html_element(proptag) %>% html_text()
+    makemodel <- car %>% html_element(mmtag) %>% html_text()
+    #details1 <- car %>% html_element(dettag) %>% html_text()
+    details <- car %>% html_elements(dettagitem) %>% html_text() %>% paste0(collapse = "_")
+    description <- car %>% html_elements(desctag) %>% html_text()
+    location <- car %>% html_elements(loctag) %>% html_text()
+    link <- car %>% html_element("a") %>% html_attr("href") 
+    carid <- link %>% str_extract("[0-9]{7}")
+    sellerid <- car %>% html_element("img") %>% html_attr("src") %>% 
+      str_extract("[0-9a-z-]+\\.jp") %>% 
+      str_remove("\\.jp")
+    tmpdf <- data.frame(price,details,makemodel,props,description,location,link,carid,sellerid,Sys.time())
+    colldf <- rbind(colldf,tmpdf)
+  },
+  error = function(cond) {
+    print(makemodel)
+  }
+  )
+}
