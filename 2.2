@@ -1,0 +1,61 @@
+
+
+#2.2
+
+dbWriteTable(
+  con,
+  "bil",
+  df1[, c("carid","details","makemodel","description","location","link")],
+  append = TRUE,
+  row.names = FALSE
+)
+
+dbWriteTable(
+  con,
+  "variabel",
+  df1[, c("carid","price_num","scrapedate")],
+  append = TRUE,
+  row.names = FALSE
+)
+
+
+
+# INSERTs til bil
+
+inserts_bil <- apply(
+  df1[, c("carid","details","makemodel","description","location","link")],
+  1,
+  function(x) {
+    sprintf(
+      "INSERT INTO bil (carid, details, makemodel, description, location, link)
+       VALUES ('%s','%s','%s','%s','%s','%s');",
+      gsub("'", "''", x[1]),
+      gsub("'", "''", x[2]),
+      gsub("'", "''", x[3]),
+      gsub("'", "''", x[4]),
+      gsub("'", "''", x[5]),
+      gsub("'", "''", x[6])
+    )
+  }
+)
+
+writeLines(inserts_bil, "INSERT_bil.sql")
+
+
+# INSERTs til variabel
+
+inserts_var <- apply(
+  df1[, c("carid","price_num","scrapedate")],
+  1,
+  function(x) {
+    sprintf(
+      "INSERT INTO variabel (carid, price, scrapedate)
+       VALUES ('%s', %s, '%s');",
+      x[1], x[2], x[3]
+    )
+  }
+)
+
+writeLines(inserts_var, "INSERT_variabel.sql")
+
+
