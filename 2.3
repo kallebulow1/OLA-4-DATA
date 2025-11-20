@@ -1,0 +1,136 @@
+
+
+#2.3
+
+# Hent gammel scraping fra SQL i R
+
+df_old_full <- df1   # gammel scraping (kørsel 1)
+df_new      <- df2   # ny scraping (kørsel 2)
+
+
+df_old <- dbReadTable(con, "variabel")
+df_bil <- dbReadTable(con, "bil")
+
+df_old_full <- merge(df_bil, df_old, by = "carid")
+
+# Sammenlign gammel og ny scraping
+
+#Nye biler (findes kun i df_new)
+
+new_cars <- df_new[!(df_new$carid %in% df_old_full$carid), ]
+
+
+# Solgte biler (findes ikke længere)
+
+sold_cars <- df_old_full[!(df_old_full$carid %in% df_new$carid), ]
+
+# Prisændringer
+
+changed_cars <- df_new[df_new$carid %in% df_old_full$carid, ]
+changed_cars <- merge(changed_cars, df_old_full[,c("carid","price_num")], by="carid")
+
+changed_cars <- changed_cars[changed_cars$price.x != changed_cars$price.y, ]
+
+# price.x = ny pris  
+# price.y = gammel pris
+
+# Merge
+changed_cars <- merge(
+  changed_cars,
+  df_old_full[, c("carid", "price_num")],
+  by = "carid",
+  suffixes = c("_new", "_old")
+)
+
+
+# Først: sørg for at begge datasæt har price_num
+
+df_old_full$price_num <- df_old_full$price |>
+  gsub(" kr\\.", "", x = _) |>
+  gsub("\\.", "", x = _) |>
+  as.numeric()
+
+df_new$price_num <- df_new$price |>
+  gsub("[^0-9]", "", x = _) |>      # fjern ALT der ikke er tal
+  as.numeric()
+
+common <- intersect(df_old_full$carid, df_new$carid)
+
+changed_cars <- merge(
+  df_new[df_new$carid %in% common, c("carid", "price_num")],
+  df_old_full[df_old_full$carid %in% common, c("carid", "price_num")],
+  by="carid",
+  suffixes=c("_new","_old")
+)
+
+
+# FILTRÉR KUN DEM MED ÆNDRET PRIS
+
+changed_real <- changed_cars[changed_cars$price_num_new != changed_cars$price_num_old, ]
+
+
+
+#Simulere 5 solgte biler
+
+set.seed(123)
+
+# 1: Vælg 5 tilfældige carid fra gamle scraping
+sold_ids <- sample(df_old_full$carid, 5)
+
+# 2: Fjern dem fra df_new → nu er de solgte
+df_new_sim <- df_new[!df_new$carid %in% sold_ids, ]
+
+
+#Nye biler
+
+new_cars <- df_new_sim[!(df_new_sim$carid %in% df_old_full$carid), ]
+
+
+
+# ændrede priser
+
+changed_cars <- merge(
+  df_new_sim[, c("carid", "price_num")],
+  df_old_full[, c("carid", "price_num")],
+  by = "carid",
+  suffixes = c("_new", "_old")
+)
+
+changed_cars <- changed_cars[changed_cars$price_num_new != changed_cars$price_num_old, ]
+
+# Solgte biler
+
+sold_cars <- df_old_full[df_old_full$carid %in% sold_ids, c("carid","details","makemodel")]
+
+
+# SQL - Insætte nye biler
+
+# --- NYE BILER ---
+if (nrow(new_cars) > 0) {
+  
+  # indsæt i bil
+  dbWriteTable(con, "bil",
+               new_cars[, c("carid","details","makemodel","description","location","link")],
+               append = TRUE)
+  
+  # indsæt i variabel
+  dbWriteTable(con, "variabel",
+               new_cars[, c("carid","price_num","scrapedate")],
+               append = TRUE)
+}
+
+## PRIS-ÆNDRINGER ###
+price_updates <- df_new_sim[df_new_sim$carid %in% changed_cars$carid,
+                            c("carid","price_num","scrapedate")]
+
+if (nrow(price_updates) > 0) {
+  dbWriteTable(con, "variabel", price_updates, append = TRUE)
+}
+
+### SOLGTE BILER ###
+if (nrow(sold_cars) > 0) {
+  ids <- paste0("'", sold_cars$carid, "'", collapse = ",")
+  dbExecute(con, paste0("UPDATE bil SET sold = TRUE WHERE carid IN (", ids, ");"))
+}
+
+
