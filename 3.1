@@ -1,0 +1,36 @@
+
+#Opgave 3
+
+
+# OPGAVE 3.1 – Hent fly og lav barplot
+
+
+library(httr)        # Henter data via API
+library(jsonlite)    # Læser JSON-format
+library(ggplot2)     # Plot og visualisering
+source("util.R")     # Henter token-funktion
+
+token <- getToken()  # Henter API-nøgle
+baseurl <- "https://opensky-network.org/api"  # API-base
+endpointS <- "/states/all"                    # Endpoint for fly
+fullurl <- paste0(baseurl, endpointS,         # Sætter URL sammen
+                  "?lamin=52.055129&lomin=-6.065140&lamax=56.196869&lomax=4.305954")
+
+res <- httr::GET(fullurl, add_headers(Authorization = paste("Bearer", token)))  # Kalder API’et
+resdata <- jsonlite::fromJSON(httr::content(res, as = "text"))                  # Læser svaret
+
+flydata <- as.data.frame(resdata$states)   # Laver data frame med fly
+colnames(flydata) <- c("icao24","callsign","origin_country","time_position",   # Kolonnenavne
+                       "last_contact","longitude","latitude","baro_altitude",
+                       "on_ground","velocity","true_track","vertical_rate",
+                       "sensors","geo_altitude","squawk","spi","position_source")
+
+fly_pr_land <- as.data.frame(table(flydata$origin_country))   # Tæller fly pr. land
+colnames(fly_pr_land) <- c("Land", "Antal")                   # Nye kolonnenavne
+
+ggplot(fly_pr_land, aes(x = reorder(Land, -Antal), y = Antal)) +  # Plot antal fly pr. land
+  geom_bar(stat = "identity", fill = "steelblue") +               # Søjlediagram
+  labs(title = "Antal fly over Nordsøen fordelt på lande",        # Titel og labels
+       x = "Land", y = "Antal fly") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))        # Skrå labels
