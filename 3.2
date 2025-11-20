@@ -1,0 +1,30 @@
+
+# OPGAVE 3.2 – Sammenlign flyruter
+
+token <- getToken()  # Henter token igen
+endpointT <- "/tracks/all"   # Endpoint for flyruter
+url <- paste0(baseurl, endpointT, "?icao24=4400b3&time=0")  # Henter rute for ét fly
+
+res <- httr::GET(url, add_headers(Authorization = paste("Bearer", token)))  # Kalder API
+resretval <- jsonlite::fromJSON(httr::content(res, as = "text"))            # Læser svaret
+
+normalt_fly <- as.data.frame(resretval$path)      # Gemmer ruten som data frame
+colnames(normalt_fly) <- c("time", "lat", "lng", "alt", "hdg", "onGround")  # Kolonnenavne
+
+circ_fly <- readRDS("circjet6.rds")   # Indlæser cirklende fly fra fil
+
+ggplot(statedf, aes(x = lng, y = lat)) +
+  geom_path(color = "blue") +
+  theme_minimal() +
+  labs(title = "Flyrute for ICAO 4400b3",
+       x = "Længdegrad", y = "Breddegrad")
+
+
+circ_fly <- readRDS("circjet6.rds")
+
+ggplot(circ_fly, aes(x = lng, y = lat)) +
+  geom_path(color = "red") +
+  theme_minimal() +
+  labs(title = "Eksempel på cirklende fly",
+       x = "Længdegrad", y = "Breddegrad")
+
