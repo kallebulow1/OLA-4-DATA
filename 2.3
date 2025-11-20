@@ -1,4 +1,4 @@
-
+MEHDI
 
 #2.3
 
@@ -131,6 +131,160 @@ if (nrow(price_updates) > 0) {
 if (nrow(sold_cars) > 0) {
   ids <- paste0("'", sold_cars$carid, "'", collapse = ",")
   dbExecute(con, paste0("UPDATE bil SET sold = TRUE WHERE carid IN (", ids, ");"))
+}
+
+BENJAMIN--------------------------------------------------------------------------------------------------------------------------------- 
+
+###############################################
+# 6) Opgave 2.3 – Opdater DB med simuleret scraping
+###############################################
+
+old_hist <- dbReadTable(con, "CarListingHistory")
+# Læser alle eksisterende historik-rækker (dag 1) fra databasen
+
+new_hist <- colldf2 %>%
+  transmute(
+    carid      = as.integer(carid),
+    # carid som integer
+    
+    scrapedate = scrapedate,
+    # scrapedate = dag 2-dato
+    
+    price      = as.integer(str_remove_all(price, "[^0-9]")),
+    # pris (tal) for dag 2
+    
+    price_prev = NA_integer_,
+    # bliver kun udfyldt eksplicit for changed rows
+    
+    is_sold    = 0L
+    # når vi indsætter nye/ændrede rækker, startes is_sold=0
+  )
+
+### a) Nye biler
+
+new_ids  <- setdiff(new_hist$carid, old_hist$carid)
+# Finder carid der findes i new_hist (dag 2) men ikke i old_hist (dag 1) -> helt nye biler
+
+new_rows <- new_hist %>% filter(carid %in% new_ids)
+# Filtrerer new_hist ned til kun de nye biler
+
+if (length(new_ids) > 0) {                 # Hvis der overhovedet er nye biler
+  new_cars <- colldf2 %>%
+    filter(carid %in% new_ids) %>%
+    mutate(
+      carid          = as.integer(carid),
+      # carid som integer
+      
+      model_name     = makemodel,
+      # modelnavn fra makemodel
+      
+      kilometerstand = str_extract(details, "[0-9.]+(?= km)") %>%
+        str_remove_all("\\.") %>% as.integer(),
+      # km ud af details, renset og som integer
+      
+      farve          = NA_character_
+      # farve stadig ukendt -> NA
+    ) %>%
+    distinct(carid, .keep_all = TRUE) %>%
+    # én række per ny bil
+    
+    select(carid, model_name, farve, kilometerstand)
+  # Beholder kun Car-kolonner
+  
+  new_dealers <- colldf2 %>%
+    filter(carid %in% new_ids) %>%
+    mutate(
+      carid       = as.integer(carid),
+      # carid som integer
+      
+      dealer_name = seller_name,
+      # dealer_name = seller_name
+      
+      address     = location,
+      # address = location
+      
+      cvr         = NA_character_
+      # cvr ukendt -> NA
+    ) %>%
+    distinct(carid, .keep_all = TRUE) %>%
+    # én dealer-row per ny bil
+    
+    select(carid, seller_name, dealer_name, address, cvr)
+  # Beholder kun Dealer-kolonner
+  
+  dbWriteTable(con, "Car",    new_cars,    append = TRUE, row.names = FALSE)
+  # Indsætter nye biler i Car-tabellen
+  
+  dbWriteTable(con, "Dealer", new_dealers, append = TRUE, row.names = FALSE)
+  # Indsætter nye forhandlere i Dealer-tabellen
+}
+
+dbWriteTable(con, "CarListingHistory", new_rows, append = TRUE, row.names = FALSE)
+# Indsætter historik-rækker for de helt nye biler (dag 2-rækker)
+
+### b) Prisændringer – indsæt rækker med både ny og gammel pris
+
+old_latest <- old_hist %>%
+  group_by(carid) %>%
+  filter(scrapedate == max(scrapedate)) %>%
+  ungroup()
+# Finder den seneste historikrække pr. bil i old_hist (dag 1)
+
+merged <- inner_join(
+  old_latest,
+  new_hist,
+  by = "carid",
+  suffix = c("_old", "_new")
+)
+# Joiner seneste gamle historik (dag 1) med nye værdier (dag 2) på carid
+
+changed <- merged %>% filter(price_old != price_new)
+# Filtrerer ned til de biler hvor prisen faktisk er ændret (pris dag 1 != pris dag 2)
+
+changed_rows <- changed %>%
+  transmute(
+    carid      = carid,
+    # carid uændret
+    
+    scrapedate = scrapedate_new,
+    # dato for den nye scraping
+    
+    price      = price_new,
+    # den nye pris
+    
+    price_prev = price_old,
+    # den gamle pris
+    
+    is_sold    = 0L
+    # bilen er ikke markeret solgt ved prisændring
+  )
+# Bygger de rækker der skal ind i CarListingHistory for prisændringer
+
+dbWriteTable(con, "CarListingHistory", changed_rows, append = TRUE, row.names = FALSE)
+# Skriver prisændrings-rækker ind i historikken
+
+### c) Solgte biler
+
+sold_ids <- setdiff(old_hist$carid, new_hist$carid)
+# Biler der fandtes i dag 1, men ikke i dag 2 -> solgte biler
+
+for (cid in sold_ids) {                                        # Loop over hver solgt bil
+  maxdate <- dbGetQuery(
+    con,
+    sprintf("SELECT MAX(scrapedate) AS d FROM CarListingHistory WHERE carid = %d", cid)
+  )$d[1]
+  # Finder den seneste scrapedate i historikken for den bil (sidste dag vi så den)
+  
+  dbExecute(
+    con,
+    sprintf("
+      UPDATE CarListingHistory
+      SET is_sold = 1
+      WHERE carid = %d
+        AND scrapedate = '%s';
+    ", cid, maxdate)
+  )
+  # Sætter is_sold = 1 på den seneste historik-række for den bil
 }
 
 
