@@ -1,0 +1,45 @@
+
+
+# --- 3.4: Egen algoritme --------------------------------------------------
+
+detect_circle <- function(sd_course, r2) {
+  if (is.na(sd_course) || is.na(r2)) return(0L)
+  if (sd_course > 40 && r2 > 0.7) return(1L)
+  return(0L)
+}
+
+results <- data.frame(
+  icao = character(),
+  sdcourse = numeric(),
+  lmres = numeric(),
+  myOwnAlg = integer(),
+  isOff = integer()
+)
+
+# --- LOOP: hent alle ICAO og beregn --------------------------------------
+
+for (id in icaos) {
+  
+  df <- get_track(id)
+  if (is.null(df)) next
+  
+  sd_course <- sd(df$hdg, na.rm = TRUE)
+  r2 <- summary(lm(lat ~ lng, data = df))$r.squared
+  
+  myAlg <- detect_circle(sd_course, r2)
+  
+  isOff <- ifelse(id %in% offical_ids, 1L, 0L)
+  
+  results <- rbind(results, data.frame(
+    icao = id,
+    sdcourse = sd_course,
+    lmres = r2,
+    myOwnAlg = myAlg,
+    isOff = isOff
+  ))
+  
+  print(paste("OK:", id))
+}
+
+results
+
